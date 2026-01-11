@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineSearch | Movie Discovery</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc; /* Slate 50 */
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        /* Movie Card Hover Effect */
+        .movie-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .movie-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Text Clamping */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Loader Animation */
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Sticky Header -->
+    <header class="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700 shadow-md">
+        <div class="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            
+            <!-- Logo -->
+            <a href="#" class="flex items-center gap-2 group" onclick="app.loadPopularMovies()">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-500 group-hover:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+                </svg>
+                <span class="text-2xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">CineSearch</span>
+            </a>
+
+            <!-- Search Bar -->
+            <div class="relative w-full md:w-96">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="Search movies..." 
+                    class="w-full bg-slate-800 text-white border border-slate-700 rounded-full py-2.5 pl-5 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder-slate-400"
+                >
+                <button 
+                    id="searchBtn" 
+                    class="absolute right-1.5 top-1.5 p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full transition-colors"
+                    aria-label="Search"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+        
+        <!-- Status Messages -->
+        <div id="statusMessage" class="hidden mb-8 text-center">
+            <!-- Dynamic Content -->
+        </div>
+
+        <!-- Movie Grid -->
+        <div id="movieGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            <!-- Movies will be injected here -->
+        </div>
+
+        <!-- Empty State / Initial Instructions -->
+        <div id="emptyState" class="text-center py-20 hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-slate-700 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+            </svg>
+            <h2 class="text-xl text-slate-400 font-medium">Ready to explore?</h2>
+            <p class="text-slate-500 mt-2">Use the search bar above to find your favorite movies.</p>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-6 mt-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-slate-500 text-sm">Powered by <a href="https://www.themoviedb.org/" target="_blank" class="text-blue-400 hover:underline">TMDB</a></p>
+            <p class="text-slate-600 text-xs mt-1">&copy; 2026 CineSearch. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        /**
+         * CONFIGURATION
+         * Replace 'YOUR_KEY_HERE' with your actual TMDB API Key.
+         * You can get one at https://www.themoviedb.org/settings/api
+         */
+        const API_KEY = '612d098c7ce2715b60de01ab3d0ddc91'; 
+        
+        const API_BASE_URL = 'https://api.themoviedb.org/3';
+        const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
+
+        class MovieApp {
+            constructor() {
+                this.searchInput = document.getElementById('searchInput');
+                this.searchBtn = document.getElementById('searchBtn');
+                this.movieGrid = document.getElementById('movieGrid');
+                this.statusMessage = document.getElementById('statusMessage');
+                this.emptyState = document.getElementById('emptyState');
+
+                this.init();
+            }
+
+            init() {
+                // Event Listeners
+                this.searchBtn.addEventListener('click', () => this.handleSearch());
+                this.searchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.handleSearch();
+                });
+
+                // Check API Key
+                if (API_KEY === 'YOUR_KEY_HERE' || !API_KEY) {
+                    this.showError('API Key Missing. Please open the source code (index.html) and replace "YOUR_KEY_HERE" with your TMDB API Key.');
+                    return;
+                }
+
+                // Initial Load (Optional: Load popular movies on start)
+                this.loadPopularMovies();
+            }
+
+            async handleSearch() {
+                const query = this.searchInput.value.trim();
+                if (!query) return;
+
+                this.showLoading();
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&include_adult=false`);
+                    
+                    if (!response.ok) throw new Error('Failed to fetch data');
+
+                    const data = await response.json();
+                    this.renderMovies(data.results);
+                } catch (error) {
+                    console.error(error);
+                    this.showError('Something went wrong while fetching movies. Please try again.');
+                }
+            }
+
+            async loadPopularMovies() {
+                if (API_KEY === 'YOUR_KEY_HERE') return;
+                
+                this.showLoading();
+                this.searchInput.value = ''; // Clear search bar
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/movie/popular?api_key=${API_KEY}&language=en-US&page=1`);
+                    if (!response.ok) throw new Error('Failed to fetch data');
+                    const data = await response.json();
+                    this.renderMovies(data.results, true);
+                } catch (error) {
+                    this.showError('Could not load popular movies.');
+                }
+            }
+
+            renderMovies(movies, isPopular = false) {
+                this.hideStatus();
+                this.movieGrid.innerHTML = '';
+
+                if (!movies || movies.length === 0) {
+                    this.showError('No results found. Try a different keyword.');
+                    this.movieGrid.classList.add('hidden');
+                    return;
+                }
+
+                this.movieGrid.classList.remove('hidden');
+                this.emptyState.classList.add('hidden');
+
+                movies.forEach(movie => {
+                    const card = this.createMovieCard(movie);
+                    this.movieGrid.appendChild(card);
+                });
+            }
+
+            createMovieCard(movie) {
+                const releaseYear = movie.release_date ? movie.release_date.split('-')[0] : 'N/A';
+                const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'NR';
+                const tmdbUrl = `https://www.themoviedb.org/movie/${movie.id}`;
+                
+                // Handle missing poster
+                const hasPoster = movie.poster_path !== null;
+                const posterSrc = hasPoster ? `${IMAGE_BASE_URL}${movie.poster_path}` : '';
+                
+                const card = document.createElement('div');
+                card.className = 'movie-card bg-slate-800 rounded-xl overflow-hidden shadow-lg border border-slate-700 flex flex-col h-full';
+
+                // Poster Logic
+                let imageHTML = '';
+                if (hasPoster) {
+                    imageHTML = `
+                        <a href="${tmdbUrl}" target="_blank" class="aspect-[2/3] w-full relative overflow-hidden bg-slate-900 block group/poster" title="View on TMDB">
+                             <img 
+                                src="${posterSrc}" 
+                                alt="${movie.title}" 
+                                class="w-full h-full object-cover transition-transform duration-500 group-hover/poster:scale-110"
+                                loading="lazy"
+                                onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'w-full h-full flex items-center justify-center bg-slate-700 text-slate-400 p-4 text-center\'><span class=\'text-sm\'>Image Unavailable</span></div>';"
+                            >
+                            <div class="absolute top-2 right-2 bg-black/70 text-white text-xs font-bold px-2 py-1 rounded-md backdrop-blur-sm border border-white/10 flex items-center gap-1 z-10">
+                                <svg class="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                ${rating}
+                            </div>
+                            <div class="absolute inset-0 bg-black/0 group-hover/poster:bg-black/10 transition-colors duration-300"></div>
+                        </a>
+                    `;
+                } else {
+                    // Fallback for missing poster
+                    imageHTML = `
+                        <a href="${tmdbUrl}" target="_blank" class="aspect-[2/3] w-full bg-slate-700 flex flex-col items-center justify-center p-4 text-center hover:bg-slate-600 transition-colors block" title="View on TMDB">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-slate-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span class="text-sm text-slate-400 font-medium">${movie.title}</span>
+                        </a>
+                    `;
+                }
+
+                card.innerHTML = `
+                    ${imageHTML}
+                    <div class="p-4 flex flex-col flex-grow">
+                        <h3 class="text-white font-semibold text-lg leading-tight mb-1 line-clamp-2" title="${movie.title}">${movie.title}</h3>
+                        <div class="flex items-center justify-between mt-auto pt-4">
+                            <span class="text-slate-400 text-sm bg-slate-700/50 px-2 py-0.5 rounded border border-slate-700">${releaseYear}</span>
+                        </div>
+                    </div>
+                `;
+
+                return card;
+            }
+
+            showLoading() {
+                this.emptyState.classList.add('hidden');
+                this.movieGrid.innerHTML = '';
+                this.statusMessage.classList.remove('hidden');
+                this.statusMessage.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-12">
+                        <div class="loader mb-4"></div>
+                        <p class="text-blue-400 animate-pulse">Searching the database...</p>
+                    </div>
+                `;
+            }
+
+            showError(message) {
+                this.emptyState.classList.add('hidden');
+                this.statusMessage.classList.remove('hidden');
+                this.statusMessage.innerHTML = `
+                    <div class="bg-red-500/10 border border-red-500/20 text-red-200 px-6 py-4 rounded-lg inline-block">
+                        <p class="font-medium">${message}</p>
+                    </div>
+                `;
+            }
+
+            hideStatus() {
+                this.statusMessage.classList.add('hidden');
+            }
+        }
+
+        // Initialize App
+        const app = new MovieApp();
+
+    </script>
+</body>
+</html>
